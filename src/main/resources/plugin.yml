@@ -1,0 +1,25 @@
+name: DeathLog
+version: '1.0.0'
+main: com.github.lukesky19.deathLog.DeathLog
+api-version: '1.21'
+
+commands:
+    deathlog:
+        description: The base command.
+
+permissions:
+    deathlog.command.deathlog:
+        description: Base permission
+        default: op
+    deathlog.command.deathlog.restore:
+        description: Permission to restore a player's inventory when they died.
+        default: op
+    deathlog.command.deathlog.give:
+        description: Permission to give a player another a player's inventory when they died.
+        default: op
+    deathlog.command.deathlog.exp:
+        description: Permission to restore a player's exp when they died.
+        default: op
+    deathlog.command.deathlog.list:
+        description: Permission to list a player's deaths.
+        default: op
