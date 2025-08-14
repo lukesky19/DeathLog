@@ -1,11 +1,8 @@
 name: DeathLog
-version: '1.0.0'
+version: '${version}'
 main: com.github.lukesky19.deathLog.DeathLog
 api-version: '1.21'
-
-commands:
-    deathlog:
-        description: The base command.
+depend: [SkyLib]
 
 permissions:
     deathlog.command.deathlog:
@@ -20,6 +17,6 @@ permissions:
     deathlog.command.deathlog.exp:
         description: Permission to restore a player's exp when they died.
         default: op
-    deathlog.command.deathlog.list:
-        description: Permission to list a player's deaths.
+    deathlog.command.deathlog.info:
+        description: Permission to view a player's deaths.
         default: op
