@@ -1,9 +1,26 @@
+/*
+    DeathLog logs player death locations, reasons, inventories, and experience. Inventories and experience can be restored.
+    Copyright (C) 2025 lukeskywlker19
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 package com.github.lukesky19.deathLog.commands;
 
 import com.github.lukesky19.deathLog.manager.InventoryManager;
 import com.github.lukesky19.deathLog.config.player.PlayerData;
 import com.github.lukesky19.deathLog.config.player.PlayerDataManager;
-import com.github.lukesky19.skylib.format.FormatUtil;
+import com.github.lukesky19.skylib.api.adventure.AdventureUtil;
 import com.mojang.brigadier.Message;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -19,16 +36,27 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * This class creates the /deathlog command to register.
+ */
 public class DeathLogCommand {
-    private final InventoryManager inventoryManager;
-    private final PlayerDataManager playerDataManager;
-    private final SimpleDateFormat simpleDateFormat;
+    private final @NotNull InventoryManager inventoryManager;
+    private final @NotNull PlayerDataManager playerDataManager;
+    private final @NotNull SimpleDateFormat simpleDateFormat;
 
-    public DeathLogCommand(InventoryManager inventoryManager, PlayerDataManager playerDataManager) {
+    /**
+     * Constructor
+     * @param inventoryManager An {@link InventoryManager} instance.
+     * @param playerDataManager A {@link PlayerDataManager} instance.
+     */
+    public DeathLogCommand(
+            @NotNull InventoryManager inventoryManager,
+            @NotNull PlayerDataManager playerDataManager) {
         this.inventoryManager = inventoryManager;
         this.playerDataManager = playerDataManager;
 
@@ -36,7 +64,11 @@ public class DeathLogCommand {
         simpleDateFormat.setTimeZone(TimeZone.getTimeZone("America/New_York"));
     }
 
-    public LiteralCommandNode<CommandSourceStack> createCommand() {
+    /**
+     * Creates the {@link LiteralCommandNode} of type {@link CommandSourceStack} to register using the Lifecycle API.
+     * @return A {@link LiteralCommandNode} of type {@link CommandSourceStack} to register using the Lifecycle API.
+     */
+    public @NotNull LiteralCommandNode<CommandSourceStack> createCommand() {
         LiteralArgumentBuilder<CommandSourceStack> builder = Commands.literal("deathlog")
                 .requires(ctx -> ctx.getSender().hasPermission("deathlog.command.deathlog"));
 
@@ -49,18 +81,16 @@ public class DeathLogCommand {
                         UUID targetUUID = target.getUniqueId();
                         PlayerData playerData = playerDataManager.getPlayerData(targetUUID);
 
-                        if(playerData != null) {
-                            List<PlayerData.Entry> entryList = playerData.entries();
+                        List<PlayerData.Entry> entryList = playerData.entries();
 
-                            for(PlayerData.Entry entry : entryList) {
-                                int id = entryList.indexOf(entry);
+                        for(PlayerData.Entry entry : entryList) {
+                            int id = entryList.indexOf(entry);
 
-                                Date date = new Date(entry.time());
+                            Date date = new Date(entry.time());
 
-                                Message toolTip = MessageComponentSerializer.message().serialize(FormatUtil.format("<yellow>Time: <red>" + simpleDateFormat.format(date) + "</red>.</yellow>"));
+                            Message toolTip = MessageComponentSerializer.message().serialize(AdventureUtil.serialize(("<yellow>Time: <red>" + simpleDateFormat.format(date) + "</red>.</yellow>")));
 
-                                suggestionsBuilder.suggest(id, toolTip);
-                            }
+                            suggestionsBuilder.suggest(id, toolTip);
                         }
 
                         return suggestionsBuilder.buildFuture();
@@ -73,29 +103,23 @@ public class DeathLogCommand {
                             int id = ctx.getArgument("id", int.class);
 
                             PlayerData playerData = playerDataManager.getPlayerData(targetUUID);
-                            if (playerData != null) {
-                                if(id < 0 || id >= playerData.entries().size()) {
-                                    ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with that ID.</red>"));
+                            if(id < 0 || id >= playerData.entries().size()) {
+                                ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>There is no data associated with that ID.</red>")));
 
-                                    return 0;
-                                }
+                                return 0;
+                            }
 
-                                PlayerData.Entry entry = playerData.entries().get(id);
-                                if (entry != null) {
-                                    List<ItemStack> itemStacks = inventoryManager.deserializeInventory(entry.items());
+                            PlayerData.Entry entry = playerData.entries().get(id);
+                            if (entry != null) {
+                                List<ItemStack> itemStacks = inventoryManager.deserializeInventory(entry.items());
 
-                                    inventoryManager.restoreInventory(target, itemStacks);
+                                inventoryManager.giveItems(target, itemStacks);
 
-                                    ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>Restored the inventory for " + target.getName() + ".</red>"));
+                                ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>Restored the inventory for " + target.getName() + ".</red>")));
 
-                                    return 1;
-                                } else {
-                                    ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with that ID.</red>"));
-
-                                    return 0;
-                                }
+                                return 1;
                             } else {
-                                ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with this player.</red>"));
+                                ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>There is no data associated with that ID.</red>")));
 
                                 return 0;
                             }
@@ -109,27 +133,21 @@ public class DeathLogCommand {
                             int id = ctx.getArgument("id", int.class);
 
                             PlayerData playerData = playerDataManager.getPlayerData(targetUUID);
-                            if (playerData != null) {
-                                if(id < 0 || id >= playerData.entries().size()) {
-                                    ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with that ID.</red>"));
+                            if(id < 0 || id >= playerData.entries().size()) {
+                                ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>There is no data associated with that ID.</red>")));
 
-                                    return 0;
-                                }
+                                return 0;
+                            }
 
-                                PlayerData.Entry entry = playerData.entries().get(id);
-                                if (entry != null) {
-                                    inventoryManager.restoreExp(target, entry.exp());
+                            PlayerData.Entry entry = playerData.entries().get(id);
+                            if (entry != null) {
+                                inventoryManager.giveExp(target, entry.exp());
 
-                                    ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>Restored the experience for " + target.getName() + ".</red>"));
+                                ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>Restored the experience for " + target.getName() + ".</red>")));
 
-                                    return 1;
-                                } else {
-                                    ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with that ID.</red>"));
-
-                                    return 0;
-                                }
+                                return 1;
                             } else {
-                                ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with this player.</red>"));
+                                ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>There is no data associated with that ID.</red>")));
 
                                 return 0;
                             }
@@ -149,18 +167,16 @@ public class DeathLogCommand {
                             UUID targetUUID = target.getUniqueId();
                             PlayerData playerData = playerDataManager.getPlayerData(targetUUID);
 
-                            if(playerData != null) {
-                                List<PlayerData.Entry> entryList = playerData.entries();
+                            List<PlayerData.Entry> entryList = playerData.entries();
 
-                                for(PlayerData.Entry entry : entryList) {
-                                    int id = entryList.indexOf(entry);
+                            for(PlayerData.Entry entry : entryList) {
+                                int id = entryList.indexOf(entry);
 
-                                    Date date = new Date(entry.time());
+                                Date date = new Date(entry.time());
 
-                                    Message toolTip = MessageComponentSerializer.message().serialize(FormatUtil.format("<yellow>Time: <red>" + simpleDateFormat.format(date) + "</red>.</yellow>"));
+                                Message toolTip = MessageComponentSerializer.message().serialize(AdventureUtil.serialize(("<yellow>Time: <red>" + simpleDateFormat.format(date) + "</red>.</yellow>")));
 
-                                    suggestionsBuilder.suggest(id, toolTip);
-                                }
+                                suggestionsBuilder.suggest(id, toolTip);
                             }
 
                             return suggestionsBuilder.buildFuture();
@@ -174,31 +190,25 @@ public class DeathLogCommand {
                                 int id = ctx.getArgument("id", int.class);
 
                                 PlayerData playerData = playerDataManager.getPlayerData(targetUUID);
-                                if (playerData != null) {
-                                    if(id < 0 || id >= playerData.entries().size()) {
-                                        ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with that ID.</red>"));
+                                if(id < 0 || id >= playerData.entries().size()) {
+                                    ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>There is no data associated with that ID.</red>")));
 
-                                        return 0;
-                                    }
+                                    return 0;
+                                }
 
-                                    PlayerData.Entry entry = playerData.entries().get(id);
-                                    if (entry != null) {
-                                        List<ItemStack> itemStacks = inventoryManager.deserializeInventory(entry.items());
+                                PlayerData.Entry entry = playerData.entries().get(id);
+                                if (entry != null) {
+                                    List<ItemStack> itemStacks = inventoryManager.deserializeInventory(entry.items());
 
-                                        if(itemStacks.isEmpty()) ctx.getSource().getSender().sendMessage(FormatUtil.format("Items is empty!"));
+                                    if(itemStacks.isEmpty()) ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("Items is empty!")));
 
-                                        inventoryManager.restoreInventory(sender, itemStacks);
+                                    inventoryManager.giveItems(sender, itemStacks);
 
-                                        ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>Given the inventory for " + target.getName() + " to " + sender.getName() + ".</red>"));
+                                    ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>Given the inventory for " + target.getName() + " to " + sender.getName() + ".</red>")));
 
-                                        return 1;
-                                    } else {
-                                        ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with that ID.</red>"));
-
-                                        return 0;
-                                    }
+                                    return 1;
                                 } else {
-                                    ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with this player.</red>"));
+                                    ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>There is no data associated with that ID.</red>")));
 
                                     return 0;
                                 }
@@ -218,18 +228,16 @@ public class DeathLogCommand {
                         UUID targetUUID = target.getUniqueId();
                         PlayerData playerData = playerDataManager.getPlayerData(targetUUID);
 
-                        if(playerData != null) {
-                            List<PlayerData.Entry> entryList = playerData.entries();
+                        List<PlayerData.Entry> entryList = playerData.entries();
 
-                            for(PlayerData.Entry entry : entryList) {
-                                int id = entryList.indexOf(entry);
+                        for(PlayerData.Entry entry : entryList) {
+                            int id = entryList.indexOf(entry);
 
-                                Date date = new Date(entry.time());
+                            Date date = new Date(entry.time());
 
-                                Message toolTip = MessageComponentSerializer.message().serialize(FormatUtil.format("<yellow>Time: <red>" + simpleDateFormat.format(date) + "</red>.</yellow>"));
+                            Message toolTip = MessageComponentSerializer.message().serialize(AdventureUtil.serialize(("<yellow>Time: <red>" + simpleDateFormat.format(date) + "</red>.</yellow>")));
 
-                                suggestionsBuilder.suggest(id, toolTip);
-                            }
+                            suggestionsBuilder.suggest(id, toolTip);
                         }
 
                         return suggestionsBuilder.buildFuture();
@@ -241,79 +249,73 @@ public class DeathLogCommand {
                         int id = ctx.getArgument("id", int.class);
 
                         PlayerData playerData = playerDataManager.getPlayerData(targetUUID);
-                        if (playerData != null) {
-                            if(id < 0 || id >= playerData.entries().size()) {
-                                ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with that ID.</red>"));
+                        if(id < 0 || id >= playerData.entries().size()) {
+                            ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>There is no data associated with that ID.</red>")));
 
-                                return 0;
-                            }
+                            return 0;
+                        }
 
-                            PlayerData.Entry entry = playerData.entries().get(id);
-                            if (entry != null) {
-                                List<ItemStack> itemStacks = inventoryManager.deserializeInventory(entry.items());
-                                int numOfItems = itemStacks.size();
-                                PlayerData.Location location = entry.location();
+                        PlayerData.Entry entry = playerData.entries().get(id);
+                        if (entry != null) {
+                            List<ItemStack> itemStacks = inventoryManager.deserializeInventory(entry.items());
+                            int numOfItems = itemStacks.size();
+                            PlayerData.Location location = entry.location();
 
-                                Date date = new Date(entry.time());
+                            Date date = new Date(entry.time());
 
-                                List<TagResolver.Single> placeholders = List.of(
-                                        Placeholder.parsed("time", simpleDateFormat.format(date)),
-                                        Placeholder.parsed("x", String.valueOf(location.x())),
-                                        Placeholder.parsed("y", String.valueOf(location.y())),
-                                        Placeholder.parsed("z", String.valueOf(location.z())),
-                                        Placeholder.parsed("world", location.world()),
-                                        Placeholder.parsed("cause", entry.cause()),
-                                        Placeholder.parsed("exp", String.valueOf(entry.exp()))
-                                );
+                            List<TagResolver.Single> placeholders = List.of(
+                                    Placeholder.parsed("time", simpleDateFormat.format(date)),
+                                    Placeholder.parsed("x", Objects.requireNonNullElse(String.valueOf(location.x()),"Unknown X Coordinate")),
+                                    Placeholder.parsed("y", Objects.requireNonNullElse(String.valueOf(location.y()),"Unknown Y Coordinate")),
+                                    Placeholder.parsed("z", Objects.requireNonNullElse(String.valueOf(location.z()),"Unknown Z Coordinate")),
+                                    Placeholder.parsed("world", Objects.requireNonNullElse(location.world(), "Unknown World")),
+                                    Placeholder.parsed("cause", entry.cause()),
+                                    Placeholder.parsed("exp", String.valueOf(entry.exp()))
+                            );
 
-                                Component timeOfDeath = FormatUtil.format("<yellow>Time of death: " +
-                                        "<red><time></red>.</yellow>", placeholders);
-                                Component causeOfDeath = FormatUtil.format("<yellow>Cause of death: " +
-                                        "<red><cause></red>.</yellow>", placeholders);
-                                Component deathLocation = FormatUtil.format("<yellow>Death location: x: " +
-                                        "<red><x></red> y: <red><y></red> z: <red><z></red> " +
-                                        "in world <red><world></red>.</yellow>", placeholders);
+                            Component timeOfDeath = AdventureUtil.serialize(("<yellow>Time of death: " +
+                                    "<red><time></red>.</yellow>"), placeholders);
+                            Component causeOfDeath = AdventureUtil.serialize(("<yellow>Cause of death: " +
+                                    "<red><cause></red>.</yellow>"), placeholders);
+                            Component deathLocation = AdventureUtil.serialize(("<yellow>Death location: x: " +
+                                    "<red><x></red> y: <red><y></red> z: <red><z></red> " +
+                                    "in world <red><world></red>.</yellow>"), placeholders);
 
-                                StringBuilder stringBuilder = new StringBuilder();
-                                stringBuilder.append("<yellow>Player had the following items: ");
+                            StringBuilder stringBuilder = new StringBuilder();
+                            stringBuilder.append("<yellow>Player had the following items: ");
 
-                                for(int i = 0; i <= numOfItems - 1; i++) {
-                                    ItemStack itemStack = itemStacks.get(i);
+                            for(int i = 0; i <= numOfItems - 1; i++) {
+                                ItemStack itemStack = itemStacks.get(i);
 
-                                    if(i == numOfItems - 1) {
-                                        stringBuilder.append("and <red>")
-                                                .append(itemStack.getType()).append(" x")
-                                                .append(itemStack.getAmount());
+                                if(i == numOfItems - 1) {
+                                    stringBuilder.append("and <red>")
+                                            .append(itemStack.getType()).append(" x")
+                                            .append(itemStack.getAmount());
 
-                                        stringBuilder.append(".</yellow>");
-                                    } else {
-                                        stringBuilder.append("<red>")
-                                                .append(itemStack.getType()).append(" x")
-                                                .append(itemStack.getAmount());
+                                    stringBuilder.append(".</yellow>");
+                                } else {
+                                    stringBuilder.append("<red>")
+                                            .append(itemStack.getType()).append(" x")
+                                            .append(itemStack.getAmount());
 
-                                        stringBuilder.append("</red>, ");
-                                    }
+                                    stringBuilder.append("</red>, ");
                                 }
-
-                                Component items = FormatUtil.format(stringBuilder.toString());
-                                Component exp = FormatUtil.format("<yellow>Exp at death: <red><exp></red>.</yellow>", placeholders);
-
-                                CommandSender sender = ctx.getSource().getSender();
-
-                                sender.sendMessage(timeOfDeath);
-                                sender.sendMessage(causeOfDeath);
-                                sender.sendMessage(deathLocation);
-                                sender.sendMessage(items);
-                                sender.sendMessage(exp);
-
-                                return 1;
-                            } else {
-                                ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with that ID.</red>"));
-
-                                return 0;
                             }
+
+                            Component items = AdventureUtil.serialize((stringBuilder.toString()));
+                            Component exp = AdventureUtil.serialize(("<yellow>Exp at death: <red><exp></red>.</yellow>"), placeholders);
+
+                            CommandSender sender = ctx.getSource().getSender();
+
+                            sender.sendMessage(timeOfDeath);
+                            sender.sendMessage(causeOfDeath);
+                            sender.sendMessage(deathLocation);
+                            sender.sendMessage(items);
+                            sender.sendMessage(exp);
+
+                            return 1;
                         } else {
-                            ctx.getSource().getSender().sendMessage(FormatUtil.format("<red>There is no data associated with this player.</red>"));
+                            ctx.getSource().getSender().sendMessage(AdventureUtil.serialize(("<red>There is no data associated with that ID.</red>")));
 
                             return 0;
                         }
