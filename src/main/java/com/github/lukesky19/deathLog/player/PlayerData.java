@@ -15,21 +15,24 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-package com.github.lukesky19.deathLog.config.player;
+package com.github.lukesky19.deathLog.player;
 
 import com.github.lukesky19.skylib.libs.configurate.objectmapping.ConfigSerializable;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
 /**
  * This record contains the data for logged deaths.
+ * @param version The data version.
  * @param entries A {@link List} of {@link Entry}.
  */
 @ConfigSerializable
-public record PlayerData(@NotNull List<Entry> entries) {
+public record PlayerData(
+        int version,
+        @NonNull List<Entry> entries) {
     /**
      * This record contains the data for a death.
      * @param time The system time when the death occurred.
@@ -39,7 +42,7 @@ public record PlayerData(@NotNull List<Entry> entries) {
      * @param exp The player's experience at the death.
      */
     @ConfigSerializable
-    public record Entry(long time, @NotNull String cause, @NotNull Location location, @NotNull List<byte[]> items, int exp) {}
+    public record Entry(long time, @NonNull String cause, @NonNull Location location, @NonNull List<byte[]> items, int exp) {}
     /**
      * This record contains the data for the location a death occurred at.
      * @param world The world the death occurred in.

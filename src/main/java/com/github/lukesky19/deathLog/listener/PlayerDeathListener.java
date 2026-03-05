@@ -19,8 +19,8 @@ package com.github.lukesky19.deathLog.listener;
 
 import com.github.lukesky19.deathLog.DeathLog;
 import com.github.lukesky19.deathLog.manager.InventoryManager;
-import com.github.lukesky19.deathLog.config.player.PlayerData;
-import com.github.lukesky19.deathLog.config.player.PlayerDataManager;
+import com.github.lukesky19.deathLog.player.PlayerData;
+import com.github.lukesky19.deathLog.player.PlayerDataManager;
 import com.github.lukesky19.skylib.api.adventure.AdventureUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
@@ -32,17 +32,19 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.Inventory;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * This class listens to when a player dies and logs deaths.
  */
 public class PlayerDeathListener implements Listener {
-    private final @NotNull ComponentLogger logger;
-    private final @NotNull InventoryManager inventoryManager;
-    private final @NotNull PlayerDataManager playerDataManager;
+    private final @NonNull ComponentLogger logger;
+    private final @NonNull InventoryManager inventoryManager;
+    private final @NonNull PlayerDataManager playerDataManager;
 
     /**
      * Constructor
@@ -51,9 +53,9 @@ public class PlayerDeathListener implements Listener {
      * @param playerDataManager A {@link PlayerDataManager} instance.
      */
     public PlayerDeathListener(
-            @NotNull DeathLog deathLog,
-            @NotNull InventoryManager inventoryManager,
-            @NotNull PlayerDataManager playerDataManager) {
+            @NonNull DeathLog deathLog,
+            @NonNull InventoryManager inventoryManager,
+            @NonNull PlayerDataManager playerDataManager) {
         this.logger = deathLog.getComponentLogger();
         this.inventoryManager = inventoryManager;
         this.playerDataManager = playerDataManager;
@@ -74,7 +76,7 @@ public class PlayerDeathListener implements Listener {
         // Get the Player's death playerDataLocation.
         Location deathLocation = player.getLastDeathLocation();
         // Get the reason the Player died.
-        Component deathReasonComponent = Objects.requireNonNullElse(playerDeathEvent.deathMessage(), AdventureUtil.serialize(("<red>Unknown Death Message.</red>")));
+        Component deathReasonComponent = Objects.requireNonNullElse(playerDeathEvent.deathMessage(), AdventureUtil.deserialize("<red>Unknown Death Message.</red>"));
         // Get the Player's experience
         int exp = player.getTotalExperience();
 
@@ -84,6 +86,10 @@ public class PlayerDeathListener implements Listener {
         List<byte[]> bytes = inventoryManager.serializeInventory(inventory);
         // Get the Player's PlayerData
         PlayerData playerData = playerDataManager.getPlayerData(uuid);
+        if(playerData == null) {
+            logger.error(AdventureUtil.deserialize("Failed to load player data."));
+            return;
+        }
 
         // Get the Player's current logged deaths or create a new list.
         List<PlayerData.Entry> entryList = playerData.entries();
@@ -119,6 +125,6 @@ public class PlayerDeathListener implements Listener {
         }
 
         // Send the death log message.
-        logger.info(AdventureUtil.serialize((logMessage)));
+        logger.info(AdventureUtil.deserialize(logMessage));
     }
 }

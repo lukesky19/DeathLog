@@ -18,10 +18,13 @@
 package com.github.lukesky19.deathLog;
 
 import com.github.lukesky19.deathLog.commands.DeathLogCommand;
-import com.github.lukesky19.deathLog.config.player.PlayerDataManager;
 import com.github.lukesky19.deathLog.listener.PlayerDeathListener;
 import com.github.lukesky19.deathLog.manager.InventoryManager;
+import com.github.lukesky19.deathLog.player.PlayerDataManager;
+import com.github.lukesky19.skylib.api.adventure.AdventureUtil;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -38,7 +41,8 @@ public final class DeathLog extends JavaPlugin {
      */
     @Override
     public void onEnable() {
-        // Plugin startup logic
+        if(!checkSkyLibVersion()) return;
+
         PlayerDataManager playerDataManager = new PlayerDataManager(this);
         InventoryManager inventoryManager = new InventoryManager();
         DeathLogCommand deathLogCommand = new DeathLogCommand(inventoryManager, playerDataManager);
@@ -50,5 +54,27 @@ public final class DeathLog extends JavaPlugin {
         PlayerDeathListener playerDeathListener = new PlayerDeathListener(this, inventoryManager, playerDataManager);
 
         this.getServer().getPluginManager().registerEvents(playerDeathListener, this);
+    }
+
+    /**
+     * Checks if the Server has the proper SkyLib version.
+     * @return true if it does, false if not.
+     */
+    private boolean checkSkyLibVersion() {
+        PluginManager pluginManager = this.getServer().getPluginManager();
+        Plugin skyLib = pluginManager.getPlugin("SkyLib");
+        if(skyLib != null) {
+            String version = skyLib.getPluginMeta().getVersion();
+            String[] splitVersion = version.split("\\.");
+            int second = Integer.parseInt(splitVersion[1]);
+
+            if(second >= 5) {
+                return true;
+            }
+        }
+
+        this.getComponentLogger().error(AdventureUtil.deserialize("SkyLib Version 1.5.0.0 or newer is required to run this plugin."));
+        this.getServer().getPluginManager().disablePlugin(this);
+        return false;
     }
 }

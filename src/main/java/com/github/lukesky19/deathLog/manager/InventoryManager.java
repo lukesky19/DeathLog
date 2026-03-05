@@ -17,12 +17,16 @@
 */
 package com.github.lukesky19.deathLog.manager;
 
+import com.github.lukesky19.skylib.api.player.PlayerUtil;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * This class manages the serialization and deserialization of an {@link Inventory}'s contents.
@@ -39,7 +43,7 @@ public class InventoryManager {
      * @param inventory The {@link Inventory} to serialize.
      * @return A {@link List} of byte arrays.
      */
-    public @NotNull List<byte[]> serializeInventory(Inventory inventory) {
+    public @NonNull List<byte[]> serializeInventory(Inventory inventory) {
         return Arrays.stream(inventory.getContents())
                 .filter(Objects::nonNull)
                 .filter(itemStack -> !itemStack.isEmpty())
@@ -52,7 +56,7 @@ public class InventoryManager {
      * @param inventoryBytes The {@link List} of byte arrays to deserialize.
      * @return A {@link List} of {@link ItemStack}s.
      */
-    public @NotNull List<@NotNull ItemStack> deserializeInventory(List<byte[]> inventoryBytes) {
+    public @NonNull List<@NonNull ItemStack> deserializeInventory(@NonNull List<byte[]> inventoryBytes) {
         return inventoryBytes.stream().map(ItemStack::deserializeBytes).toList();
     }
 
@@ -61,18 +65,11 @@ public class InventoryManager {
      * @param player The {@link Player} to give the items.
      * @param items The {@link List} of {@link ItemStack}s to give.
      */
-    public void giveItems(@NotNull Player player, @NotNull List<ItemStack> items) {
+    public void giveItems(@NonNull Player player, @NonNull List<ItemStack> items) {
         Inventory inventory = player.getInventory();
+        Location location = player.getLocation();
 
-        items.forEach(itemStack -> {
-            @NotNull HashMap<Integer, ItemStack> leftover = inventory.addItem(itemStack);
-
-            for(Map.Entry<Integer, ItemStack> entry : leftover.entrySet()) {
-                ItemStack item = entry.getValue();
-
-                player.getWorld().dropItem(player.getLocation(), item);
-            }
-        });
+        items.forEach(itemStack -> PlayerUtil.giveItem(inventory, itemStack, location));
     }
 
     /**
