@@ -18,10 +18,10 @@
 package com.github.lukesky19.deathLog.player;
 
 import com.github.lukesky19.deathLog.DeathLog;
-import com.github.lukesky19.skylib.api.adventure.AdventureUtil;
-import com.github.lukesky19.skylib.api.configurate.ConfigurationUtility;
+import com.github.lukesky19.skylib.common.api.adventure.AdventureUtility;
 import com.github.lukesky19.skylib.libs.configurate.CommentedConfigurationNode;
 import com.github.lukesky19.skylib.libs.configurate.ConfigurateException;
+import com.github.lukesky19.skylib.libs.configurate.yaml.NodeStyle;
 import com.github.lukesky19.skylib.libs.configurate.yaml.YamlConfigurationLoader;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import org.jspecify.annotations.NonNull;
@@ -58,7 +58,7 @@ public class PlayerDataManager {
         Path path = Path.of(deathLog.getDataFolder() + File.separator + "playerdata" + File.separator + playerId + ".yml");
         if(!path.toFile().exists()) return new PlayerData(1, new ArrayList<>());
 
-        YamlConfigurationLoader loader = ConfigurationUtility.getYamlConfigurationLoader(path);
+        YamlConfigurationLoader loader = createLoader(path);
         try {
             playerData = loader.load().get(PlayerData.class);
 
@@ -76,7 +76,7 @@ public class PlayerDataManager {
             
             return playerData;
         } catch (ConfigurateException e) {
-            logger.error(AdventureUtil.deserialize("Failed to load player data for player " + playerId));
+            logger.error(AdventureUtility.plain("Failed to load player data for player " + playerId));
             return null;
         }
     }
@@ -89,14 +89,14 @@ public class PlayerDataManager {
      */
     public void savePlayerData(@NonNull String playerName, @NonNull UUID playerId, @NonNull PlayerData playerData) {
         Path path = Path.of(deathLog.getDataFolder() + File.separator + "playerdata" + File.separator + playerId + ".yml");
-        YamlConfigurationLoader loader = ConfigurationUtility.getYamlConfigurationLoader(path);
+        YamlConfigurationLoader loader = createLoader(path);
 
         CommentedConfigurationNode playerNode = loader.createNode();
         try {
             playerNode.set(playerData);
             loader.save(playerNode);
         } catch(ConfigurateException e) {
-            logger.error(AdventureUtil.deserialize("Failed to save player data for player " + playerName));
+            logger.error(AdventureUtility.plain("Failed to save player data for player " + playerName));
         }
     }
 
@@ -107,14 +107,27 @@ public class PlayerDataManager {
      */
     public void savePlayerData(@NonNull UUID playerId, @NonNull PlayerData playerData) {
         Path path = Path.of(deathLog.getDataFolder() + File.separator + "playerdata" + File.separator + playerId + ".yml");
-        YamlConfigurationLoader loader = ConfigurationUtility.getYamlConfigurationLoader(path);
+        YamlConfigurationLoader loader = createLoader(path);
 
         CommentedConfigurationNode playerNode = loader.createNode();
         try {
             playerNode.set(playerData);
             loader.save(playerNode);
         } catch(ConfigurateException e) {
-            logger.error(AdventureUtil.deserialize("Failed to save player data for player " + playerId));
+            logger.error(AdventureUtility.plain("Failed to save player data for player " + playerId));
         }
+    }
+
+    /**
+     * Create the {@link YamlConfigurationLoader} for the path provided.
+     * @param path The {@link Path}.
+     * @return The {@link YamlConfigurationLoader}.
+     */
+    protected @NonNull YamlConfigurationLoader createLoader(@NonNull Path path) {
+        return YamlConfigurationLoader.builder()
+                .path(path)
+                .nodeStyle(NodeStyle.BLOCK)
+                .indent(4)
+                .build();
     }
 }

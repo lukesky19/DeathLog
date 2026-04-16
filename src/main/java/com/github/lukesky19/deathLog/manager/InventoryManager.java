@@ -17,7 +17,7 @@
 */
 package com.github.lukesky19.deathLog.manager;
 
-import com.github.lukesky19.skylib.api.player.PlayerUtil;
+import com.github.lukesky19.skylib.paper.api.player.PlayerUtil;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;

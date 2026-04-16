@@ -21,7 +21,7 @@ import com.github.lukesky19.deathLog.DeathLog;
 import com.github.lukesky19.deathLog.manager.InventoryManager;
 import com.github.lukesky19.deathLog.player.PlayerData;
 import com.github.lukesky19.deathLog.player.PlayerDataManager;
-import com.github.lukesky19.skylib.api.adventure.AdventureUtil;
+import com.github.lukesky19.skylib.common.api.adventure.AdventureUtility;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -76,7 +76,7 @@ public class PlayerDeathListener implements Listener {
         // Get the Player's death playerDataLocation.
         Location deathLocation = player.getLastDeathLocation();
         // Get the reason the Player died.
-        Component deathReasonComponent = Objects.requireNonNullElse(playerDeathEvent.deathMessage(), AdventureUtil.deserialize("<red>Unknown Death Message.</red>"));
+        Component deathReasonComponent = Objects.requireNonNullElse(playerDeathEvent.deathMessage(), AdventureUtility.deserialize("<red>Unknown Death Message.</red>"));
         // Get the Player's experience
         int exp = player.getTotalExperience();
 
@@ -87,7 +87,7 @@ public class PlayerDeathListener implements Listener {
         // Get the Player's PlayerData
         PlayerData playerData = playerDataManager.getPlayerData(uuid);
         if(playerData == null) {
-            logger.error(AdventureUtil.deserialize("Failed to load player data."));
+            logger.error(AdventureUtility.deserialize("Failed to load player data."));
             return;
         }
 
@@ -125,6 +125,6 @@ public class PlayerDeathListener implements Listener {
         }
 
         // Send the death log message.
-        logger.info(AdventureUtil.deserialize(logMessage));
+        logger.info(AdventureUtility.deserialize(logMessage));
     }
 }
